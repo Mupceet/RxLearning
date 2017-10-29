@@ -35,23 +35,6 @@ public class ApplicationAdapter extends RecyclerView.Adapter<ApplicationAdapter.
         mRowLayout = rowLayout;
     }
 
-
-
-    public void addApplications(List<AppInfo> applications) {
-        Log.i("lgz", "addApplications: " + applications.size());
-        mApplications.clear();
-        mApplications.addAll(applications);
-        notifyDataSetChanged();
-    }
-
-    public void addApplication(int position, AppInfo appInfo) {
-        if (position < 0) {
-            position = 0;
-        }
-        mApplications.add(position, appInfo);
-        notifyItemInserted(position);
-    }
-
     @Override
     public ViewHolder onCreateViewHolder(final ViewGroup viewGroup, int i) {
         View v = LayoutInflater.from(viewGroup.getContext()).inflate(mRowLayout, viewGroup, false);

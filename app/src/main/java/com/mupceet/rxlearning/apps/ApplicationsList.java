@@ -1,14 +1,13 @@
 package com.mupceet.rxlearning.apps;
 
-import android.support.annotation.Nullable;
-
+import java.util.ArrayList;
 import java.util.List;
 
 public class ApplicationsList {
 
     private static ApplicationsList ourInstance = new ApplicationsList();
 
-    private List<AppInfo> mList;
+    private List<AppInfo> mList = new ArrayList<>();
 
     private ApplicationsList() {
     }
@@ -17,7 +16,7 @@ public class ApplicationsList {
         return ourInstance;
     }
 
-    public @Nullable List<AppInfo> getList() {
+    public List<AppInfo> getList() {
         return mList;
     }
 

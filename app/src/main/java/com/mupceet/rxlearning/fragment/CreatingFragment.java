@@ -35,6 +35,7 @@ import java.io.File;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -51,7 +52,18 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 /**
- * Created by lgz on 10/29/17.
+ * 主要内容：
+ * 1. create
+ * 2. from
+ * 3. just
+ * 4. repeat
+ * 5. range
+ * 6. timer
+ * 7. interval
+ * <p>
+ * 缺少：
+ * 3. defer
+ * 4. Empty/Never/Throw
  */
 
 public class CreatingFragment extends Fragment {
@@ -68,6 +80,8 @@ public class CreatingFragment extends Fragment {
     private List<AppInfo> mApps = new ArrayList<>();
     private List<AppInfo> mStoredAppsList = new ArrayList<>();
     private File mFilesDir;
+    private Disposable mDisposable;
+
 
     public CreatingFragment() {
     }
@@ -138,6 +152,43 @@ public class CreatingFragment extends Fragment {
             mStoredAppsList = ApplicationsList.getInstance().getList();
             loadList(mStoredAppsList);
             return true;
+        } else if (id == R.id.menu_just) {
+            mSwipeRefreshLayout.setEnabled(false);
+            mSwipeRefreshLayout.setRefreshing(true);
+            mStoredAppsList = ApplicationsList.getInstance().getList();
+            if (mStoredAppsList.size() >= 5) {
+                loadApps(mStoredAppsList.get(0), mStoredAppsList.get(2), mStoredAppsList.get(5));
+            }
+        } else if (id == R.id.menu_repeat) {
+            mSwipeRefreshLayout.setEnabled(false);
+            mSwipeRefreshLayout.setRefreshing(true);
+            mStoredAppsList = ApplicationsList.getInstance().getList();
+            if (mStoredAppsList.size() >= 5) {
+                loadAppsRepeat(mStoredAppsList.get(0),
+                        mStoredAppsList.get(2),
+                        mStoredAppsList.get(5));
+            }
+        } else if (id == R.id.menu_range) {
+            mSwipeRefreshLayout.setEnabled(false);
+            mSwipeRefreshLayout.setRefreshing(true);
+            mStoredAppsList = ApplicationsList.getInstance().getList();
+            if (mStoredAppsList.size() >= 5) {
+                loadAppsRange(mStoredAppsList);
+            }
+        } else if (id == R.id.menu_timer) {
+            mSwipeRefreshLayout.setEnabled(false);
+            mSwipeRefreshLayout.setRefreshing(true);
+            mStoredAppsList = ApplicationsList.getInstance().getList();
+            if (mStoredAppsList.size() >= 5) {
+                loadAppsTimer(mStoredAppsList.get(0));
+            }
+        } else if (id == R.id.menu_interval) {
+            mSwipeRefreshLayout.setEnabled(false);
+            mSwipeRefreshLayout.setRefreshing(true);
+            mStoredAppsList = ApplicationsList.getInstance().getList();
+            if (mStoredAppsList.size() >= 5) {
+                loadAppsInterval(mStoredAppsList.get(0));
+            }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -146,11 +197,15 @@ public class CreatingFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         unbinder.unbind();
+        if (mDisposable != null && !mDisposable.isDisposed()) {
+            mDisposable.dispose();
+        }
     }
 
     //
     // Example 1: create
     //
+    // 知识点：create
 
     private Observable<File> getFileDir() {
         return Observable.create(new ObservableOnSubscribe<File>() {
@@ -208,6 +263,7 @@ public class CreatingFragment extends Fragment {
                     @Override
                     public void onSubscribe(@NonNull Disposable d) {
                         Log.d("lgz", "onSubscribe: ");
+                        mDisposable = d;
                     }
 
                     @Override
@@ -233,6 +289,12 @@ public class CreatingFragment extends Fragment {
     //
     // Example 2: from
     //
+    // 知识点：fromIterable
+    // 扩展：
+    // fromArray
+    // fromFuture
+    // fromCallable
+    // fromPublisher。
 
     private void storeList(final List<AppInfo> appInfos) {
         ApplicationsList.getInstance().setList(appInfos);
@@ -248,6 +310,35 @@ public class CreatingFragment extends Fragment {
         });
     }
 
+    Observer<AppInfo> mObserver = new Observer<AppInfo>() {
+        @Override
+        public void onSubscribe(@NonNull Disposable d) {
+            Log.i(TAG, "onSubscribe: ");
+            mDisposable = d;
+            mApps.clear();
+            mAdapter.notifyDataSetChanged();
+        }
+
+        @Override
+        public void onNext(AppInfo appInfo) {
+            Log.i(TAG, "onNext: " + appInfo.toString());
+            mApps.add(appInfo);
+            mAdapter.notifyItemInserted(mApps.size() - 1);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            Toast.makeText(getActivity(), "Something went wrong!", Toast.LENGTH_SHORT).show();
+            mSwipeRefreshLayout.setRefreshing(false);
+        }
+
+        @Override
+        public void onComplete() {
+            mSwipeRefreshLayout.setRefreshing(false);
+            Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_SHORT).show();
+        }
+    };
+
     private void loadList(List<AppInfo> apps) {
         if (apps == null || apps.size() == 0) {
             Toast.makeText(getActivity(), "Have not loaded list yet!", Toast.LENGTH_SHORT).show();
@@ -255,21 +346,56 @@ public class CreatingFragment extends Fragment {
             return;
         }
         Observable.fromIterable(apps)
-                .subscribe(new Observer<AppInfo>() {
+                .subscribe(mObserver);
+
+    }
+
+    //
+    // Example 3: just
+    //
+    // 知识点：just 最多只能 just 10个，但实际上使用的是 fromArray 的方式。
+
+    private void loadApps(AppInfo app1, AppInfo app2, AppInfo app3) {
+        Observable.just(app1, app2, app3)
+                .subscribe(mObserver);
+    }
+
+    //
+    // Example 4: repeat
+    //
+    // 知识点：repeat 重复发射数据
+
+    private void loadAppsRepeat(AppInfo app1, AppInfo app2, AppInfo app3) {
+        Observable.just(app1, app2, app3)
+                .repeat(3)
+                .subscribe(mObserver);
+    }
+
+    //
+    // Example 5: range
+    //
+    // 知识点：range 从某个数开始，连续发射几个数
+
+    private void loadAppsRange(final List<AppInfo> apps) {
+        Observable.range(2, 3)
+                .subscribe(new Observer<Integer>() {
                     @Override
                     public void onSubscribe(@NonNull Disposable d) {
-                        Log.i(TAG, "onSubscribe: ");
+                        mDisposable = d;
+                        mApps.clear();
+                        mAdapter.notifyDataSetChanged();
                     }
 
                     @Override
-                    public void onNext(AppInfo appInfo) {
+                    public void onNext(@NonNull Integer integer) {
+                        AppInfo appInfo = apps.get(integer);
                         Log.i(TAG, "onNext: " + appInfo.toString());
                         mApps.add(appInfo);
                         mAdapter.notifyItemInserted(mApps.size() - 1);
                     }
 
                     @Override
-                    public void onError(Throwable t) {
+                    public void onError(@NonNull Throwable e) {
                         Toast.makeText(getActivity(), "Something went wrong!", Toast.LENGTH_SHORT).show();
                         mSwipeRefreshLayout.setRefreshing(false);
                     }
@@ -277,9 +403,71 @@ public class CreatingFragment extends Fragment {
                     @Override
                     public void onComplete() {
                         mSwipeRefreshLayout.setRefreshing(false);
-                        Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_SHORT).show();
                     }
                 });
 
+
+    }
+
+    //
+    // Example 6: timer
+    //
+    // 知识点：延时
+
+    private void loadAppsTimer(final AppInfo app) {
+        mApps.clear();
+        mAdapter.notifyDataSetChanged();
+
+        Observable.timer(2, TimeUnit.SECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<Long>() {
+                    @Override
+                    public void accept(Long aLong) throws Exception {
+                        mApps.add(app);
+                        mAdapter.notifyItemInserted(mApps.size() - 1);
+                        mSwipeRefreshLayout.setRefreshing(false);
+                        Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_SHORT).show();
+
+                    }
+                });
+    }
+
+    //
+    // Example 7: interval
+    //
+    // 知识点：轮询
+
+    private void loadAppsInterval(final AppInfo app) {
+        Observable.interval(2, TimeUnit.SECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Long>() {
+                    @Override
+                    public void onSubscribe(@NonNull Disposable d) {
+                        mDisposable = d;
+                        mApps.clear();
+                        mAdapter.notifyDataSetChanged();
+                    }
+
+                    @Override
+                    public void onNext(@NonNull Long aLong) {
+                        Log.i(TAG, "onNext: " + aLong);
+                        mApps.add(app);
+                        mAdapter.notifyItemInserted(mApps.size() - 1);
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable e) {
+                        Toast.makeText(getActivity(), "Something went wrong!", Toast.LENGTH_SHORT).show();
+                        mSwipeRefreshLayout.setRefreshing(false);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.i(TAG, "onComplete: ");
+                        mSwipeRefreshLayout.setRefreshing(false);
+                        Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 }

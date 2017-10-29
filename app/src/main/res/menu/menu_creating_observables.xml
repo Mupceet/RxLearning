@@ -10,4 +10,29 @@
         android:id="@+id/menu_from"
         android:title="@string/menu_from"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_just"
+        android:title="@string/menu_just"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_repeat"
+        android:title="@string/menu_repeat"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_range"
+        android:title="@string/menu_range"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_timer"
+        android:title="@string/menu_timer"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_interval"
+        android:title="@string/menu_interval"
+        app:showAsAction="never" />
+
 </menu>
