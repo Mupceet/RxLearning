@@ -12,9 +12,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
-import com.mupceet.rxlearning.example1.FirstExampleFragment;
+import com.mupceet.rxlearning.fragment.CreatingFragment;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -57,8 +56,6 @@ public class MainActivity extends AppCompatActivity
         toggle.syncState();
 
         mNavigationView.setNavigationItemSelectedListener(this);
-
-
     }
 
 
@@ -67,12 +64,11 @@ public class MainActivity extends AppCompatActivity
 
         // Handle navigation view item clicks here.
         int id = item.getItemId();
-        if (id == R.id.fragment_first_example) {
+        if (id == R.id.fragment_creating) {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.container, new FirstExampleFragment())
+                    .replace(R.id.container, new CreatingFragment())
                     .commit();
         }
-
         mDrawerLayout.closeDrawer(GravityCompat.START);
 
         return true;

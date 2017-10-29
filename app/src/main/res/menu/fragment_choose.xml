@@ -3,9 +3,9 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/fragment_first_example"
+        android:id="@+id/fragment_creating"
         android:orderInCategory="100"
-        android:title="@string/fragment_1"
-        app:showAsAction="always"/>
+        android:title="@string/fragment_create"
+        app:showAsAction="ifRoom"/>
 
 </menu>
