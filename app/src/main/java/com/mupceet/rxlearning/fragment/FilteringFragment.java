@@ -35,11 +35,11 @@ import java.io.File;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.Unbinder;
+import io.reactivex.MaybeObserver;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
@@ -49,25 +49,27 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 /**
- * 主要内容：
- * 1. create
- * 2. from
- * 3. just
- * 4. repeat
- * 5. range
- * 6. timer
- * 7. interval
+ * 知识点：
+ * filter
+ * take
+ * takeLast
+ * distinct
+ * first
+ * last
+ * skip skipLast
+ * elementAt
  * <p>
- * 缺少：
- * 3. defer
- * 4. Empty/Never/Throw
+ * 省略：
+ * sample throttleFirst throttleLast
+ * timeout
+ * debounce
  */
-
-public class CreatingFragment extends Fragment {
-    public static final String TAG = "CreatingFragment";
+public class FilteringFragment extends Fragment {
+    public static final String TAG = "FilteringFragment";
 
     @BindView(R.id.fragment_creating_list)
     RecyclerView mRecyclerView;
@@ -83,7 +85,7 @@ public class CreatingFragment extends Fragment {
     private Disposable mDisposable;
 
 
-    public CreatingFragment() {
+    public FilteringFragment() {
     }
 
     @Override
@@ -131,65 +133,62 @@ public class CreatingFragment extends Fragment {
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_creating_observables, menu);
+        inflater.inflate(R.menu.menu_filtering_observables, menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.menu_create) {
-            mSwipeRefreshLayout.setEnabled(true);
+        if (id == R.id.menu_filter) {
+            mSwipeRefreshLayout.setEnabled(false);
             mSwipeRefreshLayout.setRefreshing(true);
-            mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-                @Override
-                public void onRefresh() {
-                    refreshTheList();
-                }
-            });
-            refreshTheList();
+            mStoredAppsList = ApplicationsList.getInstance().getList();
+            loadAppsFilter(mStoredAppsList);
             return true;
-        } else if (id == R.id.menu_from) {
+        } else if (id == R.id.menu_take) {
             mSwipeRefreshLayout.setEnabled(false);
             mSwipeRefreshLayout.setRefreshing(true);
             mStoredAppsList = ApplicationsList.getInstance().getList();
-            loadList(mStoredAppsList);
+            if (mStoredAppsList.size() > 3) {
+                loadAppsTake(mStoredAppsList);
+            }
             return true;
-        } else if (id == R.id.menu_just) {
+        } else if (id == R.id.menu_take_last) {
             mSwipeRefreshLayout.setEnabled(false);
             mSwipeRefreshLayout.setRefreshing(true);
             mStoredAppsList = ApplicationsList.getInstance().getList();
-            if (mStoredAppsList.size() >= 5) {
-                loadApps(mStoredAppsList.get(0), mStoredAppsList.get(2), mStoredAppsList.get(5));
+            if (mStoredAppsList.size() > 3) {
+                loadAppsTakeLast(mStoredAppsList);
             }
-        } else if (id == R.id.menu_repeat) {
+            return true;
+        } else if (id == R.id.menu_distinct) {
             mSwipeRefreshLayout.setEnabled(false);
             mSwipeRefreshLayout.setRefreshing(true);
             mStoredAppsList = ApplicationsList.getInstance().getList();
-            if (mStoredAppsList.size() >= 5) {
-                loadAppsRepeat(mStoredAppsList.get(0),
-                        mStoredAppsList.get(2),
-                        mStoredAppsList.get(5));
+            if (mStoredAppsList.size() > 3) {
+                loadAppsDistinct(mStoredAppsList);
             }
-        } else if (id == R.id.menu_range) {
+            return true;
+        } else if (id == R.id.menu_first) {
             mSwipeRefreshLayout.setEnabled(false);
             mSwipeRefreshLayout.setRefreshing(true);
             mStoredAppsList = ApplicationsList.getInstance().getList();
-            if (mStoredAppsList.size() >= 5) {
-                loadAppsRange(mStoredAppsList);
+            if (mStoredAppsList.size() > 3) {
+                loadAppsFirst(mStoredAppsList);
             }
-        } else if (id == R.id.menu_timer) {
+        } else if (id == R.id.menu_skip) {
             mSwipeRefreshLayout.setEnabled(false);
             mSwipeRefreshLayout.setRefreshing(true);
             mStoredAppsList = ApplicationsList.getInstance().getList();
-            if (mStoredAppsList.size() >= 5) {
-                loadAppsTimer(mStoredAppsList.get(0));
+            if (mStoredAppsList.size() > 3) {
+                loadAppsSkip(mStoredAppsList);
             }
-        } else if (id == R.id.menu_interval) {
+        } else if (id == R.id.menu_element_at) {
             mSwipeRefreshLayout.setEnabled(false);
             mSwipeRefreshLayout.setRefreshing(true);
             mStoredAppsList = ApplicationsList.getInstance().getList();
-            if (mStoredAppsList.size() >= 5) {
-                loadAppsInterval(mStoredAppsList.get(0));
+            if (mStoredAppsList.size() > 3) {
+                loadAppsElementAt(mStoredAppsList);
             }
         }
         return super.onOptionsItemSelected(item);
@@ -204,10 +203,122 @@ public class CreatingFragment extends Fragment {
         }
     }
 
-    //
-    // Example 1: create
-    //
-    // 知识点：create
+
+    // Example 1: Filter
+
+    private void loadAppsFilter(List<AppInfo> apps) {
+        Observable.fromIterable(apps)
+                .filter(new Predicate<AppInfo>() {
+                    @Override
+                    public boolean test(AppInfo appInfo) throws Exception {
+                        return appInfo.getName().startsWith("C");
+                    }
+                }).subscribe(mObserver);
+    }
+
+    // Example 2: take
+
+    private void loadAppsTake(List<AppInfo> apps) {
+        Observable.fromIterable(apps)
+                .take(3)
+                .subscribe(mObserver);
+    }
+
+    // Example 3: takeLast
+
+    private void loadAppsTakeLast(List<AppInfo> apps) {
+        Observable.fromIterable(apps)
+                .takeLast(2)
+                .subscribe(mObserver);
+    }
+
+    // Example 4: distinct
+    // 缺少了：DistinctUntilsChanged 书中举了一个例子，就是温度计不停发送温度，只有温度发生变化时才真正地发送
+
+    private void loadAppsDistinct(List<AppInfo> apps) {
+        Observable<AppInfo> fullOfDuplicate = Observable.fromIterable(apps).take(3).repeat(3);
+        fullOfDuplicate.distinct()
+                .subscribe(mObserver);
+    }
+
+    // Example 5:
+    // first(AppInfo defaultInfo)
+    // last(AppInfo defaultInfo)
+
+    private MaybeObserver<AppInfo> mMaybeObserver = new MaybeObserver<AppInfo>() {
+        @Override
+        public void onSubscribe(@NonNull Disposable d) {
+            Log.i(TAG, "onSubscribe: ");
+            mDisposable = d;
+            mApps.clear();
+            mAdapter.notifyDataSetChanged();
+        }
+
+        @Override
+        public void onSuccess(AppInfo appInfo) {
+            Log.i(TAG, "onSuccess: " + appInfo.toString());
+            mApps.add(appInfo);
+            mAdapter.notifyItemInserted(mApps.size() - 1);
+            // Maybe 正常情况下会success，所以在这里设置状态
+            mSwipeRefreshLayout.setRefreshing(false);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            Toast.makeText(getActivity(), "Something went wrong!", Toast.LENGTH_SHORT).show();
+            mSwipeRefreshLayout.setRefreshing(false);
+        }
+
+        @Override
+        public void onComplete() {
+            // Maybe 不发射数据时回调这里
+            mSwipeRefreshLayout.setRefreshing(false);
+            Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_SHORT).show();
+        }
+    };
+
+    private void loadAppsFirst(List<AppInfo> apps) {
+        Observable.fromIterable(apps)
+                .firstElement()
+                .subscribe(mMaybeObserver);
+    }
+
+
+    // Example 6: skip skipLast
+    // ..
+
+    private void loadAppsSkip(List<AppInfo> apps) {
+        Observable.fromIterable(apps)
+                .skip(3)
+                .subscribe(mObserver);
+    }
+
+
+    // Example 7: elementAt 两个参数，count defaultItem
+    // ..
+
+    private void loadAppsElementAt(List<AppInfo> apps) {
+        Observable.fromIterable(apps)
+                .elementAt(3)
+                .subscribe(mMaybeObserver);
+    }
+
+    // Example 8:
+    // sample(fullOfDuplicate, true)
+    // sample(3, TimeUnit.DAYS) 每间隔时间发送最近的最后一个条目
+    // 如果要发送最近的第一个条目： throttleFirst
+    // 其中 throttleLast 就是使用 sample 实现的。
+    // 补充：throttleWithTimeout 是使用 debounce 实现的
+
+    // Example 9:
+    // timeout 每隔n秒至少发射一个, 如果没能及时发射，则会触发 onError
+    // ..
+
+    // Example 10:
+    // debounce() 函数过滤掉由Observable发射的速率过快的数据；如果在一个指定
+    // 的时间间隔过去了仍旧没有发射一个，那么它将发射最后的那个
+
+    //=====================================================================================
 
     private Observable<File> getFileDir() {
         return Observable.create(new ObservableOnSubscribe<File>() {
@@ -288,16 +399,6 @@ public class CreatingFragment extends Fragment {
 
     }
 
-    //
-    // Example 2: from
-    //
-    // 知识点：fromIterable
-    // 扩展：
-    // fromArray
-    // fromFuture
-    // fromCallable
-    // fromPublisher。
-
     private void storeList(final List<AppInfo> appInfos) {
         ApplicationsList.getInstance().setList(appInfos);
 
@@ -311,6 +412,7 @@ public class CreatingFragment extends Fragment {
             }
         });
     }
+
 
     Observer<AppInfo> mObserver = new Observer<AppInfo>() {
         @Override
@@ -341,135 +443,4 @@ public class CreatingFragment extends Fragment {
         }
     };
 
-    private void loadList(List<AppInfo> apps) {
-        if (apps == null || apps.size() == 0) {
-            Toast.makeText(getActivity(), "Have not loaded list yet!", Toast.LENGTH_SHORT).show();
-            mSwipeRefreshLayout.setRefreshing(false);
-            return;
-        }
-        Observable.fromIterable(apps)
-                .subscribe(mObserver);
-
-    }
-
-    //
-    // Example 3: just
-    //
-    // 知识点：just 最多只能 just 10个，但实际上使用的是 fromArray 的方式。
-
-    private void loadApps(AppInfo app1, AppInfo app2, AppInfo app3) {
-        Observable.just(app1, app2, app3)
-                .subscribe(mObserver);
-    }
-
-    //
-    // Example 4: repeat
-    //
-    // 知识点：repeat 重复发射数据
-
-    private void loadAppsRepeat(AppInfo app1, AppInfo app2, AppInfo app3) {
-        Observable.just(app1, app2, app3)
-                .repeat(3)
-                .subscribe(mObserver);
-    }
-
-    //
-    // Example 5: range
-    //
-    // 知识点：range 从某个数开始，连续发射几个数
-
-    private void loadAppsRange(final List<AppInfo> apps) {
-        Observable.range(2, 3)
-                .subscribe(new Observer<Integer>() {
-                    @Override
-                    public void onSubscribe(@NonNull Disposable d) {
-                        mDisposable = d;
-                        mApps.clear();
-                        mAdapter.notifyDataSetChanged();
-                    }
-
-                    @Override
-                    public void onNext(@NonNull Integer integer) {
-                        AppInfo appInfo = apps.get(integer);
-                        Log.i(TAG, "onNext: " + appInfo.toString());
-                        mApps.add(appInfo);
-                        mAdapter.notifyItemInserted(mApps.size() - 1);
-                    }
-
-                    @Override
-                    public void onError(@NonNull Throwable e) {
-                        Toast.makeText(getActivity(), "Something went wrong!", Toast.LENGTH_SHORT).show();
-                        mSwipeRefreshLayout.setRefreshing(false);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        mSwipeRefreshLayout.setRefreshing(false);
-                        Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_SHORT).show();
-                    }
-                });
-
-
-    }
-
-    //
-    // Example 6: timer
-    //
-    // 知识点：延时
-
-    private void loadAppsTimer(final AppInfo app) {
-        mApps.clear();
-        mAdapter.notifyDataSetChanged();
-
-        Observable.timer(2, TimeUnit.SECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<Long>() {
-                    @Override
-                    public void accept(Long aLong) throws Exception {
-                        mApps.add(app);
-                        mAdapter.notifyItemInserted(mApps.size() - 1);
-                        mSwipeRefreshLayout.setRefreshing(false);
-                        Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_SHORT).show();
-
-                    }
-                });
-    }
-
-    //
-    // Example 7: interval
-    //
-    // 知识点：轮询
-
-    private void loadAppsInterval(final AppInfo app) {
-        Observable.interval(2, TimeUnit.SECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<Long>() {
-                    @Override
-                    public void onSubscribe(@NonNull Disposable d) {
-                        mDisposable = d;
-                        mApps.clear();
-                        mAdapter.notifyDataSetChanged();
-                    }
-
-                    @Override
-                    public void onNext(@NonNull Long aLong) {
-                        Log.i(TAG, "onNext: " + aLong);
-                        mApps.add(app);
-                        mAdapter.notifyItemInserted(mApps.size() - 1);
-                    }
-
-                    @Override
-                    public void onError(@NonNull Throwable e) {
-                        Toast.makeText(getActivity(), "Something went wrong!", Toast.LENGTH_SHORT).show();
-                        mSwipeRefreshLayout.setRefreshing(false);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        Log.i(TAG, "onComplete: ");
-                        mSwipeRefreshLayout.setRefreshing(false);
-                        Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
 }

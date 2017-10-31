@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_filter"
+        android:title="@string/menu_filter"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_take"
+        android:title="@string/menu_take"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_take_last"
+        android:title="@string/menu_take_last"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_distinct"
+        android:title="@string/menu_distinct"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_first"
+        android:title="@string/menu_first"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_skip"
+        android:title="@string/menu_skip"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_element_at"
+        android:title="@string/menu_element_at"
+        app:showAsAction="never" />
+
+</menu>

@@ -14,6 +14,7 @@ import android.view.MenuItem;
 import android.widget.FrameLayout;
 
 import com.mupceet.rxlearning.fragment.CreatingFragment;
+import com.mupceet.rxlearning.fragment.FilteringFragment;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -67,6 +68,10 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.fragment_creating) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.container, new CreatingFragment())
+                    .commit();
+        } else if (id == R.id.fragment_filtering) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.container, new FilteringFragment())
                     .commit();
         }
         mDrawerLayout.closeDrawer(GravityCompat.START);

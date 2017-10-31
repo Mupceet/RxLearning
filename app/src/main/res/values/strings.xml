@@ -9,6 +9,8 @@
     <string name="fragment_1">Example 1</string>
     <string name="fragment_2">Example 2</string>
     <string name="fragment_create">Creating Observables</string>
+    <string name="fragment_filter">Filtering Observables</string>
+    <!--Creating-->
     <string name="menu_create">create</string>
     <string name="menu_from">fromIterable</string>
     <string name="menu_just">just</string>
@@ -16,4 +18,12 @@
     <string name="menu_range">range</string>
     <string name="menu_timer">timer</string>
     <string name="menu_interval">interval</string>
+    <!--Filter-->
+    <string name="menu_filter">filter</string>
+    <string name="menu_take">take</string>
+    <string name="menu_take_last">takeLast</string>
+    <string name="menu_distinct">distinct</string>
+    <string name="menu_first">first</string>
+    <string name="menu_skip">skip</string>
+    <string name="menu_element_at">elementAt</string>
 </resources>

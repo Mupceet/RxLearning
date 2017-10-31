@@ -8,4 +8,10 @@
         android:title="@string/fragment_create"
         app:showAsAction="ifRoom"/>
 
+    <item
+        android:id="@+id/fragment_filtering"
+        android:orderInCategory="100"
+        android:title="@string/fragment_filter"
+        app:showAsAction="ifRoom"/>
+
 </menu>

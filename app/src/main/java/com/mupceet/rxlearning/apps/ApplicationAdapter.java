@@ -67,7 +67,12 @@ public class ApplicationAdapter extends RecyclerView.Adapter<ApplicationAdapter.
         return Observable.create(new ObservableOnSubscribe<Bitmap>() {
             @Override
             public void subscribe(@NonNull ObservableEmitter<Bitmap> subscriber) throws Exception {
-                subscriber.onNext(BitmapFactory.decodeFile(icon));
+                Bitmap iconBitmap = BitmapFactory.decodeFile(icon);
+                if (iconBitmap != null) {
+                    subscriber.onNext(BitmapFactory.decodeFile(icon));
+                } else {
+                    subscriber.onError(new NullPointerException("Icon: " + icon +" decode failed!"));
+                }
                 subscriber.onComplete();
             }
         });
