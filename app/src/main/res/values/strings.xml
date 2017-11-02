@@ -10,6 +10,7 @@
     <string name="fragment_2">Example 2</string>
     <string name="fragment_create">Creating Observables</string>
     <string name="fragment_filter">Filtering Observables</string>
+    <string name="fragment_transform">Transforming Observables</string>
     <!--Creating-->
     <string name="menu_create">create</string>
     <string name="menu_from">fromIterable</string>
@@ -26,4 +27,8 @@
     <string name="menu_first">first</string>
     <string name="menu_skip">skip</string>
     <string name="menu_element_at">elementAt</string>
+    <!--Transform-->
+    <string name="menu_map">map</string>
+    <string name="menu_scan">scan</string>
+    <string name="menu_group_by">groupBy</string>
 </resources>
