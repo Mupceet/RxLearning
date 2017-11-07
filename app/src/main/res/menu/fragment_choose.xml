@@ -20,4 +20,10 @@
         android:title="@string/fragment_transform"
         app:showAsAction="ifRoom"/>
 
+    <item
+        android:id="@+id/fragment_combining"
+        android:orderInCategory="100"
+        android:title="@string/fragment_combine"
+        app:showAsAction="ifRoom"/>
+
 </menu>

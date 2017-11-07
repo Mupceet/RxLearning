@@ -34,7 +34,9 @@ import com.mupceet.rxlearning.utils.Utils;
 import java.io.File;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -43,33 +45,19 @@ import io.reactivex.MaybeObserver;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.ObservableSource;
 import io.reactivex.Observer;
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Predicate;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
-/**
- * 知识点：
- * filter
- * take
- * takeLast
- * distinct
- * first
- * last
- * skip skipLast
- * elementAt
- * <p>
- * 省略：
- * sample throttleFirst throttleLast
- * timeout
- * debounce
- */
-public class FilteringFragment extends Fragment {
-    public static final String TAG = "FilteringFragment";
+public class CombiningFragment extends Fragment {
+    public static final String TAG = "CombiningFragment";
 
     @BindView(R.id.fragment_creating_list)
     RecyclerView mRecyclerView;
@@ -85,7 +73,7 @@ public class FilteringFragment extends Fragment {
     private Disposable mDisposable;
 
 
-    public FilteringFragment() {
+    public CombiningFragment() {
     }
 
     @Override
@@ -133,63 +121,36 @@ public class FilteringFragment extends Fragment {
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_filtering_observables, menu);
+        inflater.inflate(R.menu.menu_combining_observables, menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.menu_filter) {
+        if (id == R.id.menu_merge) {
             mSwipeRefreshLayout.setEnabled(false);
             mSwipeRefreshLayout.setRefreshing(true);
             mStoredAppsList = ApplicationsList.getInstance().getList();
-            loadAppsFilter(mStoredAppsList);
+            loadAppsMerge(mStoredAppsList);
             return true;
-        } else if (id == R.id.menu_take) {
+        } else if (id == R.id.menu_zip) {
             mSwipeRefreshLayout.setEnabled(false);
             mSwipeRefreshLayout.setRefreshing(true);
             mStoredAppsList = ApplicationsList.getInstance().getList();
-            if (mStoredAppsList.size() > 3) {
-                loadAppsTake(mStoredAppsList);
-            }
+            loadAppsZip(mStoredAppsList);
             return true;
-        } else if (id == R.id.menu_take_last) {
+        } else if (id == R.id.menu_join) {
             mSwipeRefreshLayout.setEnabled(false);
             mSwipeRefreshLayout.setRefreshing(true);
             mStoredAppsList = ApplicationsList.getInstance().getList();
-            if (mStoredAppsList.size() > 3) {
-                loadAppsTakeLast(mStoredAppsList);
-            }
+            loadAppsJoin(mStoredAppsList);
             return true;
-        } else if (id == R.id.menu_distinct) {
+        } else if (id == R.id.menu_combineLatest) {
             mSwipeRefreshLayout.setEnabled(false);
             mSwipeRefreshLayout.setRefreshing(true);
             mStoredAppsList = ApplicationsList.getInstance().getList();
-            if (mStoredAppsList.size() > 3) {
-                loadAppsDistinct(mStoredAppsList);
-            }
+            loadAppsCombineLatest(mStoredAppsList);
             return true;
-        } else if (id == R.id.menu_first) {
-            mSwipeRefreshLayout.setEnabled(false);
-            mSwipeRefreshLayout.setRefreshing(true);
-            mStoredAppsList = ApplicationsList.getInstance().getList();
-            if (mStoredAppsList.size() > 3) {
-                loadAppsFirst(mStoredAppsList);
-            }
-        } else if (id == R.id.menu_skip) {
-            mSwipeRefreshLayout.setEnabled(false);
-            mSwipeRefreshLayout.setRefreshing(true);
-            mStoredAppsList = ApplicationsList.getInstance().getList();
-            if (mStoredAppsList.size() > 3) {
-                loadAppsSkip(mStoredAppsList);
-            }
-        } else if (id == R.id.menu_element_at) {
-            mSwipeRefreshLayout.setEnabled(false);
-            mSwipeRefreshLayout.setRefreshing(true);
-            mStoredAppsList = ApplicationsList.getInstance().getList();
-            if (mStoredAppsList.size() > 3) {
-                loadAppsElementAt(mStoredAppsList);
-            }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -204,126 +165,113 @@ public class FilteringFragment extends Fragment {
     }
 
 
-    // Example 1: Filter
+    // Example 1: merge
 
-    private void loadAppsFilter(List<AppInfo> apps) {
-        Observable.fromIterable(apps)
-                .filter(new Predicate<AppInfo>() {
+    private void loadAppsMerge(List<AppInfo> apps) {
+        List<AppInfo> reverseApps = new ArrayList<>();
+        reverseApps.addAll(apps);
+        Collections.reverse(reverseApps);
+        Observable<AppInfo> observable = Observable.fromIterable(apps);
+        Observable<AppInfo> observableReverse = Observable.fromIterable(reverseApps);
+
+        Observable.merge(observable, observableReverse)
+                .subscribe(mObserver);
+    }
+
+    // Example 2: zip
+
+    private void loadAppsZip(List<AppInfo> apps) {
+        Observable<AppInfo> observable = Observable.fromIterable(apps);
+        Observable<Long> interval = Observable.interval(1, TimeUnit.SECONDS);
+
+        Observable.zip(observable, interval, new BiFunction<AppInfo, Long, AppInfo>() {
+            @Override
+            public AppInfo apply(AppInfo appInfo, Long aLong) throws Exception {
+                return updateAppName(appInfo, aLong);
+            }
+        }).observeOn(AndroidSchedulers.mainThread())
+                .take(10)
+                .subscribe(mObserver);
+    }
+
+    // Example 3: join
+    // 这里需要画图来说明，就是一个排列组合关系 但是如果发生了重叠，就有点不一样了，要探究一下
+
+    private void loadAppsJoin(final List<AppInfo> apps) {
+        Observable<AppInfo> appsSequence = Observable.interval(1, TimeUnit.SECONDS)
+                .map(new Function<Long, AppInfo>() {
                     @Override
-                    public boolean test(AppInfo appInfo) throws Exception {
-                        return appInfo.getName().startsWith("C");
+                    public AppInfo apply(Long aLong) throws Exception {
+                        return apps.get(aLong.intValue());
                     }
-                }).subscribe(mObserver);
-    }
+                });
 
-    // Example 2: take
+        Observable<Long> interval = Observable.interval(1, TimeUnit.SECONDS);
 
-    private void loadAppsTake(List<AppInfo> apps) {
-        Observable.fromIterable(apps)
-                .take(3)
+        appsSequence.join(interval, new Function<AppInfo, ObservableSource<Long>>() {
+            @Override
+            public ObservableSource<Long> apply(AppInfo appInfo) throws Exception {
+                return Observable.timer(1900, TimeUnit.MILLISECONDS);
+            }
+        }, new Function<Long, ObservableSource<Long>>() {
+            @Override
+            public ObservableSource<Long> apply(Long aLong) throws Exception {
+                return Observable.timer(900, TimeUnit.MILLISECONDS);
+            }
+        }, new BiFunction<AppInfo, Long, AppInfo>() {
+            @Override
+            public AppInfo apply(AppInfo appInfo, Long aLong) throws Exception {
+                return updateAppName(appInfo, aLong);
+            }
+        }).observeOn(AndroidSchedulers.mainThread())
+                .take(10)
                 .subscribe(mObserver);
     }
 
-    // Example 3: takeLast
+    // Example 4: combineLatest
+    // 这里需要画图来说明，就是一个最近关系的zip 但是如果发生了重叠，就有点不一样了，要探究一下
 
-    private void loadAppsTakeLast(List<AppInfo> apps) {
-        Observable.fromIterable(apps)
-                .takeLast(2)
+    private void loadAppsCombineLatest(final List<AppInfo> apps) {
+        Observable<AppInfo> appsSequence = Observable.interval(1, TimeUnit.SECONDS)
+                .map(new Function<Long, AppInfo>() {
+                    @Override
+                    public AppInfo apply(Long aLong) throws Exception {
+                        return apps.get(aLong.intValue());
+                    }
+                });
+
+        Observable<Long> interval = Observable.interval(1400, TimeUnit.MILLISECONDS);
+
+        Observable.combineLatest(appsSequence, interval, new BiFunction<AppInfo, Long, AppInfo>() {
+            @Override
+            public AppInfo apply(AppInfo appInfo, Long aLong) throws Exception {
+                return updateAppName(appInfo, aLong);
+            }
+        }).observeOn(AndroidSchedulers.mainThread())
+                .take(10)
                 .subscribe(mObserver);
     }
 
-    // Example 4: distinct
-    // 缺少了：DistinctUntilsChanged 书中举了一个例子，就是温度计不停发送温度，只有温度发生变化时才真正地发送
+    // Example 5: and them when
 
-    private void loadAppsDistinct(List<AppInfo> apps) {
-        Observable<AppInfo> fullOfDuplicate = Observable.fromIterable(apps).take(3).repeat(3);
-        fullOfDuplicate.distinct()
-                .subscribe(mObserver);
+    private void loadAppsAndThenWhen(final List<AppInfo> apps) {
+        // nothing
+        
     }
 
-    // Example 5:
-    // first(AppInfo defaultInfo)
-    // last(AppInfo defaultInfo)
-
-    private MaybeObserver<AppInfo> mMaybeObserver = new MaybeObserver<AppInfo>() {
-        @Override
-        public void onSubscribe(@NonNull Disposable d) {
-            Log.i(TAG, "onSubscribe: ");
-            mDisposable = d;
-            mApps.clear();
-            mAdapter.notifyDataSetChanged();
-        }
-
-        @Override
-        public void onSuccess(AppInfo appInfo) {
-            Log.i(TAG, "onSuccess: " + appInfo.toString());
-            mApps.add(appInfo);
-            mAdapter.notifyItemInserted(mApps.size() - 1);
-            // Maybe 正常情况下会success，所以在这里设置状态
-            mSwipeRefreshLayout.setRefreshing(false);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            Toast.makeText(getActivity(), "Something went wrong!", Toast.LENGTH_SHORT).show();
-            mSwipeRefreshLayout.setRefreshing(false);
-        }
-
-        @Override
-        public void onComplete() {
-            // Maybe 不发射数据时回调这里
-            mSwipeRefreshLayout.setRefreshing(false);
-            Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_SHORT).show();
-        }
-    };
-
-    private void loadAppsFirst(List<AppInfo> apps) {
-        Observable.fromIterable(apps)
-                .firstElement()
-                .subscribe(mMaybeObserver);
-    }
-
-
-    // Example 6: skip skipLast
-    // ..
-
-    private void loadAppsSkip(List<AppInfo> apps) {
-        Observable.fromIterable(apps)
-                .skip(3)
-                .subscribe(mObserver);
-    }
-
-
-    // Example 7: elementAt 两个参数，count defaultItem
-    // ..
-
-    private void loadAppsElementAt(List<AppInfo> apps) {
-        Observable.fromIterable(apps)
-                .elementAt(3)
-                .subscribe(mMaybeObserver);
-    }
-
-    // Example 8:
-    // sample(fullOfDuplicate, true)
-    // sample(3, TimeUnit.DAYS) 每间隔时间发送最近的最后一个条目
-    // 它每秒都会发射当前室内的温度。说实话，我们并不认为温度会变化这么快
-    // 我们进行采样，在一个指定的时间间隔里由Observable发射最近一次的数值.
-
-    // 如果要发送最近的第一个条目： throttleFirst
-    // 其中 throttleLast 就是使用 sample 实现的。
-    // 补充：throttleWithTimeout 是使用 debounce 实现的
-
-    // Example 9:
-    // timeout 每隔n秒至少发射一个, 如果没能及时发射，则会触发 onError
-    // 假设我们工作的是一个时效性的环境，我们温度传感器每秒都在发射一个温度值。
-    // 我们想让它每隔两秒至少发射一个，我们可以使用 timeout() 函数来监听源可观
-    // 测序列,就是在我们设定的时间间隔内如果没有得到一个值则发射一个错误。..
-
-    // Example 10:
-    // debounce() 函数过滤掉由Observable发射的速率过快的数据；如果在一个指定
-    // 的时间间隔过去了仍旧没有发射一个，那么它将发射最后的那个
+    // Example 6: switchOnNext
+    // 给出一个发射多个Observables序列的源Observable， switch() 订阅到源
+    // Observable然后开始发射由第一个发射的Observable发射的一样的数据。当源
+    // Observable发射一个新的Observable时， switch() 立即取消订阅前一个发射数
+    // 据的Observable（ 因此打断了从它那里发射的数据流） 然后订阅一个新的
+    // Observable，并开始发射它的数据。.
 
     //=====================================================================================
+
+    private AppInfo updateAppName(AppInfo appInfo, Long aLong) {
+        appInfo.setName(aLong + " " + appInfo.getName());
+        return appInfo;
+    }
 
     private Observable<File> getFileDir() {
         return Observable.create(new ObservableOnSubscribe<File>() {
@@ -443,6 +391,38 @@ public class FilteringFragment extends Fragment {
 
         @Override
         public void onComplete() {
+            mSwipeRefreshLayout.setRefreshing(false);
+            Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_SHORT).show();
+        }
+    };
+
+    private MaybeObserver<AppInfo> mMaybeObserver = new MaybeObserver<AppInfo>() {
+        @Override
+        public void onSubscribe(@NonNull Disposable d) {
+            Log.i(TAG, "onSubscribe: ");
+            mDisposable = d;
+            mApps.clear();
+            mAdapter.notifyDataSetChanged();
+        }
+
+        @Override
+        public void onSuccess(AppInfo appInfo) {
+            Log.i(TAG, "onSuccess: " + appInfo.toString());
+            mApps.add(appInfo);
+            mAdapter.notifyItemInserted(mApps.size() - 1);
+            // Maybe 正常情况下会success，所以在这里设置状态
+            mSwipeRefreshLayout.setRefreshing(false);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            Toast.makeText(getActivity(), "Something went wrong!", Toast.LENGTH_SHORT).show();
+            mSwipeRefreshLayout.setRefreshing(false);
+        }
+
+        @Override
+        public void onComplete() {
+            // Maybe 不发射数据时回调这里
             mSwipeRefreshLayout.setRefreshing(false);
             Toast.makeText(getActivity(), "Here is the list!", Toast.LENGTH_SHORT).show();
         }

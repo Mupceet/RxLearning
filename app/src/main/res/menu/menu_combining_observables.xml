@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_merge"
+        android:title="@string/menu_merge"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_zip"
+        android:title="@string/menu_zip"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_join"
+        android:title="@string/menu_join"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_combineLatest"
+        android:title="@string/menu_combine_latest"
+        app:showAsAction="never" />
+
+
+</menu>

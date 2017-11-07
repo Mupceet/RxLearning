@@ -13,6 +13,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.widget.FrameLayout;
 
+import com.mupceet.rxlearning.fragment.CombiningFragment;
 import com.mupceet.rxlearning.fragment.CreatingFragment;
 import com.mupceet.rxlearning.fragment.FilteringFragment;
 import com.mupceet.rxlearning.fragment.TransformingFragment;
@@ -77,6 +78,10 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.fragment_transforming) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.container, new TransformingFragment())
+                    .commit();
+        } else if (id == R.id.fragment_combining) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.container, new CombiningFragment())
                     .commit();
         }
         mDrawerLayout.closeDrawer(GravityCompat.START);
